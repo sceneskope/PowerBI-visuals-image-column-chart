@@ -1,49 +1,40 @@
 {
     "dataRoles": [{
-            "name": "Category",
+            "name": "Image",
             "kind": "Grouping",
-            "displayName": "Category Data"
+            "displayName": "Image URL",
+            "description": "The URL of the image to show"
         },
         {
-            "name": "Measure",
+            "name": "Series",
+            "kind": "Grouping",
+            "displayName": "Details",
+            "description": "The category to use for each bar"
+        },
+        {
+            "name": "Y",
             "kind": "Measure",
-            "displayName": "Measure Data"
-        },
-        {
-            "name": "CategoryImageUrl",
-            "kind": "Grouping",
-            "displayName": "Category Image URL"
+            "displayName": "Values",
+            "description": "The values to plot"
         }
     ],
     "dataViewMappings": [{
-        "conditions": [{
-            "Category": {
-                "min": 1,
-                "max": 1
-            },
-            "Measure": {
-                "min": 0,
-                "max": 1
-            },
-            "CategoryImageUrl": {
-                "min": 0,
-                "max": 1
-            }
-        }],
+        "conditions": [
+            { "Image": { "max": 1 }, "Series": { "min": 1, "max": 1 }, "Y": { "min": 1, "max": 1 } },
+            { "Image": { "max": 0 }, "Series": { "min": 1, "max": 1 }, "Y": { "max": 0 } }
+        ],
         "categorical": {
             "categories": {
-                "for": {
-                    "in": "Category"
-                }
+                "for": { "in": "Series" },
+                "dataReductionAlgorithm": { "top": {} }
             },
             "values": {
                 "group": {
-                    "by": "CategoryImageUrl",
-                    "select": [{
-                        "bind": {
-                            "to": "Measure"
-                        }
-                    }]
+                    "by": "Image",
+                    "dataReductionAlgorithm": { "top": {} },
+                    "select": [
+                        { "bind": { "to": "Y" } }
+                    ]
                 }
             }
         }
@@ -54,7 +45,9 @@
             "properties": {
                 "show": {
                     "displayName": "Enable Axis",
-                    "type": { "bool": true }
+                    "type": {
+                        "bool": true
+                    }
                 }
             }
         },
@@ -63,7 +56,9 @@
             "properties": {
                 "show": {
                     "displayName": "Enable Images",
-                    "type": { "bool": true }
+                    "type": {
+                        "bool": true
+                    }
                 }
             }
         },

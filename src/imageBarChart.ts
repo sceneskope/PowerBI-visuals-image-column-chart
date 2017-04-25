@@ -1,4 +1,14 @@
 module powerbi.extensibility.visual {
+    import DataViewObjects = powerbi.extensibility.utils.dataview.DataViewObjects;
+    import DataViewObjectPropertyIdentifier = powerbi.DataViewObjectPropertyIdentifier;
+    import valueFormatter = powerbi.extensibility.utils.formatting.valueFormatter;
+    import tooltip = powerbi.extensibility.utils.tooltip;
+
+    const colorSelector = { objectName: "colorSelector", propertyName: "fill" };
+    const enableAxisSelector = { objectName: "enableAxis", propertyName: "show" };
+    const enableImagesSelector = { objectName: "enableImages", propertyName: "show" };
+    const generalViewOpacitySelector = { objectName: "generalView", propertyName: "opacity" };
+
     /**
      * Interface for BarCharts viewmodel.
      *
@@ -84,59 +94,78 @@ module powerbi.extensibility.visual {
             || !dataViews[0]
             || !dataViews[0].categorical
             || !dataViews[0].categorical.categories
-            || !dataViews[0].categorical.categories[0].source
-            || !dataViews[0].categorical.values)
+            || !dataViews[0].categorical.categories[0]) {
             return viewModel;
+        }
 
-        let categorical = dataViews[0].categorical;
-        let category = categorical.categories[0];
+        const categorical = dataViews[0].categorical;
+        const category = categorical.categories[0];
+        const hasValues = !!(categorical.values && categorical.values[0]);
+        const imageUrlColumns = dataViews[0].metadata.columns.filter(c => c && c.type && c.type.misc && c.type.misc.imageUrl);
+        const hasImageUrls = imageUrlColumns.length > 0;
 
-        const hasNoImageUrls = categorical.values.length === 1;
-
-        let barChartDataPoints: BarChartDataPoint[] = [];
+        const barCount = category.values.length;
+        const barChartDataPoints: BarChartDataPoint[] = [];
 
         let colorPalette: IColorPalette = host.colorPalette;
         let objects = dataViews[0].metadata.objects;
+        
         let barChartSettings: BarChartSettings = {
             enableAxis: {
-                show: getValue<boolean>(objects, 'enableAxis', 'show', defaultSettings.enableAxis.show),
+                show: DataViewObjects.getValue<boolean>(objects, enableAxisSelector, defaultSettings.enableAxis.show),
             },
             enableImages: {
-                show: getValue<boolean>(objects, "enableImages", "show", defaultSettings.enableImages.show)
+                show: hasImageUrls && DataViewObjects.getValue<boolean>(objects, enableImagesSelector, defaultSettings.enableImages.show)
             },
             generalView: {
-                opacity: getValue<number>(objects, 'generalView', 'opacity', defaultSettings.generalView.opacity),
+                opacity: DataViewObjects.getValue<number>(objects, generalViewOpacitySelector, defaultSettings.generalView.opacity),
             }
         };
 
-        const len = category.values.length;
-        let dataMax: number|undefined = undefined;
-        let dataMin: number|undefined = undefined;
-        for (let i = 0; i < len; i++) {
-            let defaultColor: Fill = {
-                solid: {
-                    color: colorPalette.getColor(category.values[i] + '').value
+        let dataMax: number | undefined = undefined;
+        let dataMin: number | undefined = undefined;
+        for (let i = 0; i < barCount; i++) {
+            let barValue: number;
+            let barUrl: string | undefined;
+            let selectionId: ISelectionId;
+            const barName = category.values[i] + "";
+
+            if (hasValues) {
+                if (hasImageUrls) {
+                    const column = categorical.values[i];
+                    barUrl = column.source.groupName as string;
+                    barValue = column.values[i] as number;
+                } else {
+                    const column = categorical.values[0];
+                    barValue = column.values[i] as number;
+                    barUrl = undefined;
                 }
-            };
-            let dataValue =  categorical.values[hasNoImageUrls ? 0 : i];
-            const imageUrl = hasNoImageUrls ? undefined : dataValue.source.groupName as string;
-            const value = dataValue.values[i] as number;
-            if (dataMax === undefined) {
-                dataMax = value;
-            } else if (value > dataMax) {
-                dataMax = value;
             }
-            if (dataMin === undefined) {
-                dataMin = value;
-            } else if (value < dataMin) {
-                dataMin = value;
+            else {
+                barUrl = undefined;
+                barValue = 0;
             }
 
+            const defaultColor = colorPalette.getColor(barName).value;
+
+            if (dataMax === undefined) {
+                dataMax = barValue;
+            } else if (barValue > dataMax) {
+                dataMax = barValue;
+            }
+            if (dataMin === undefined) {
+                dataMin = barValue;
+            } else if (barValue < dataMin) {
+                dataMin = barValue;
+            }
+
+            const color = DataViewObjects.getFillColor(objects, colorSelector, defaultColor);
+
             barChartDataPoints.push({
-                category: category.values[i] + '',
-                value: dataValue.values[i],
-                color: getCategoricalObjectValue<Fill>(category, i, 'colorSelector', 'fill', defaultColor).solid.color,
-                imageUrl: imageUrl,
+                category: barName,
+                value: barValue,
+                color: color,
+                imageUrl: barUrl,
                 selectionId: host.createSelectionIdBuilder()
                     .withCategory(category, i)
                     .createSelectionId()
@@ -161,8 +190,9 @@ module powerbi.extensibility.visual {
         private xAxis: d3.Selection<SVGElement>;
         private barDataPoints: BarChartDataPoint[];
         private barChartSettings: BarChartSettings;
-        private tooltipServiceWrapper: ITooltipServiceWrapper;
+        private tooltipServiceWrapper: tooltip.ITooltipServiceWrapper;
         private locale: string;
+        private formatter: utils.formatting.IValueFormatter;
 
         static Config = {
             xScalePadding: 0.1,
@@ -186,9 +216,10 @@ module powerbi.extensibility.visual {
          *                                             which contains services.
          */
         constructor(options: VisualConstructorOptions) {
+            this.formatter = valueFormatter.create({value: 0, precision: 3});
             this.host = options.host;
             this.selectionManager = options.host.createSelectionManager();
-            this.tooltipServiceWrapper = createTooltipServiceWrapper(this.host.tooltipService, options.element);
+            this.tooltipServiceWrapper = tooltip.createTooltipServiceWrapper(this.host.tooltipService, options.element);
             let svg = this.svg = d3.select(options.element)
                 .append('svg')
                 .classed('barChart', true);
@@ -294,8 +325,8 @@ module powerbi.extensibility.visual {
             }
 
             this.tooltipServiceWrapper.addTooltip(this.barContainer.selectAll('.bar'),
-                (tooltipEvent: TooltipEventArgs<number>) => this.getTooltipData(tooltipEvent.data),
-                (tooltipEvent: TooltipEventArgs<number>) => null);
+                (tooltipEvent: tooltip.TooltipEventArgs<number>) => this.getTooltipData(tooltipEvent.data),
+                (tooltipEvent: tooltip.TooltipEventArgs<number>) => null);
 
             let selectionManager = this.selectionManager;
             let allowInteractions = this.host.allowInteractions;
@@ -402,12 +433,10 @@ module powerbi.extensibility.visual {
         }
 
         private getTooltipData(value: any): VisualTooltipDataItem[] {
-            let language = getLocalizedString(this.locale, "LanguageKey");
             return [{
                 displayName: value.category,
-                value: value.value.toString(),
-                color: value.color,
-                header: language && "displayed language " + language
+                value: this.formatter.format(value.value),
+                color: value.color
             }];
         }
     }

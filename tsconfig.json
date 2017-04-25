@@ -19,10 +19,6 @@
         "node_modules/powerbi-visuals-utils-interactivityutils/lib/index.d.ts",
         "node_modules/powerbi-visuals-utils-chartutils/lib/index.d.ts",
         "node_modules/powerbi-visuals-utils-tooltiputils/lib/index.d.ts",
-        "src/tooltipServiceWrapper.ts",
-        "src/barChart.ts",
-        "src/objectEnumerationUtility.ts",
-        "src/localization/localizationHelper.ts",
-        "src/localization/localizedResources.ts"
+        "src/imageBarChart.ts"
     ]
 }
