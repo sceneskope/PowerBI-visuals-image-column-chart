@@ -1,52 +1,68 @@
 {
-    "dataRoles": [
-        {
-            "displayName": "Category Data",
-            "name": "category",
-            "kind": "Grouping"
+    "dataRoles": [{
+            "name": "Category",
+            "kind": "Grouping",
+            "displayName": "Category Data"
         },
         {
-            "displayName": "Measure Data",
-            "name": "measure",
-            "kind": "Measure"
+            "name": "Measure",
+            "kind": "Measure",
+            "displayName": "Measure Data"
+        },
+        {
+            "name": "CategoryImageUrl",
+            "kind": "Grouping",
+            "displayName": "Category Image URL"
         }
     ],
-    "dataViewMappings": [
-        {
-            "conditions": [
-                {
-                    "category": {
-                        "max": 1
-                    },
-                    "measure": {
-                        "max": 1
-                    }
+    "dataViewMappings": [{
+        "conditions": [{
+            "Category": {
+                "min": 1,
+                "max": 1
+            },
+            "Measure": {
+                "min": 0,
+                "max": 1
+            },
+            "CategoryImageUrl": {
+                "min": 0,
+                "max": 1
+            }
+        }],
+        "categorical": {
+            "categories": {
+                "for": {
+                    "in": "Category"
                 }
-            ],
-            "categorical": {
-                "categories": {
-                    "for": {
-                        "in": "category"
-                    }
-                },
-                "values": {
-                    "select": [
-                        {
-                            "bind": {
-                                "to": "measure"
-                            }
+            },
+            "values": {
+                "group": {
+                    "by": "CategoryImageUrl",
+                    "select": [{
+                        "bind": {
+                            "to": "Measure"
                         }
-                    ]
+                    }]
                 }
             }
         }
-    ],
+    }],
     "objects": {
         "enableAxis": {
             "displayName": "Enable Axis",
             "properties": {
                 "show": {
                     "displayName": "Enable Axis",
+                    "type": { "bool": true }
+                }
+            }
+        },
+        "enableImages": {
+            "displayName": "Enable Images",
+            "properties": {
+                "show": {
+                    "displayName": "Enable Images",
                     "type": { "bool": true }
                 }
             }

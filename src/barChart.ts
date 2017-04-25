@@ -9,6 +9,7 @@ module powerbi.extensibility.visual {
     interface BarChartViewModel {
         dataPoints: BarChartDataPoint[];
         dataMax: number;
+        dataMin: number;
         settings: BarChartSettings;
     };
 
@@ -26,6 +27,7 @@ module powerbi.extensibility.visual {
         value: PrimitiveValue;
         category: string;
         color: string;
+        imageUrl?: string;
         selectionId: ISelectionId;
     };
 
@@ -39,6 +41,10 @@ module powerbi.extensibility.visual {
         enableAxis: {
             show: boolean;
         };
+
+        enableImages: {
+            show: boolean;
+        }
 
         generalView: {
             opacity: number;
@@ -60,6 +66,9 @@ module powerbi.extensibility.visual {
             enableAxis: {
                 show: false,
             },
+            enableImages: {
+                show: true
+            },
             generalView: {
                 opacity: 100
             }
@@ -67,6 +76,7 @@ module powerbi.extensibility.visual {
         let viewModel: BarChartViewModel = {
             dataPoints: [],
             dataMax: 0,
+            dataMin: 1,
             settings: <BarChartSettings>{}
         };
 
@@ -80,10 +90,10 @@ module powerbi.extensibility.visual {
 
         let categorical = dataViews[0].categorical;
         let category = categorical.categories[0];
-        let dataValue = categorical.values[0];
+
+        const hasNoImageUrls = categorical.values.length === 1;
 
         let barChartDataPoints: BarChartDataPoint[] = [];
-        let dataMax: number;
 
         let colorPalette: IColorPalette = host.colorPalette;
         let objects = dataViews[0].metadata.objects;
@@ -91,41 +101,63 @@ module powerbi.extensibility.visual {
             enableAxis: {
                 show: getValue<boolean>(objects, 'enableAxis', 'show', defaultSettings.enableAxis.show),
             },
+            enableImages: {
+                show: getValue<boolean>(objects, "enableImages", "show", defaultSettings.enableImages.show)
+            },
             generalView: {
                 opacity: getValue<number>(objects, 'generalView', 'opacity', defaultSettings.generalView.opacity),
             }
         };
-        for (let i = 0, len = Math.max(category.values.length, dataValue.values.length); i < len; i++) {
+
+        const len = category.values.length;
+        let dataMax: number|undefined = undefined;
+        let dataMin: number|undefined = undefined;
+        for (let i = 0; i < len; i++) {
             let defaultColor: Fill = {
                 solid: {
                     color: colorPalette.getColor(category.values[i] + '').value
                 }
             };
+            let dataValue =  categorical.values[hasNoImageUrls ? 0 : i];
+            const imageUrl = hasNoImageUrls ? undefined : dataValue.source.groupName as string;
+            const value = dataValue.values[i] as number;
+            if (dataMax === undefined) {
+                dataMax = value;
+            } else if (value > dataMax) {
+                dataMax = value;
+            }
+            if (dataMin === undefined) {
+                dataMin = value;
+            } else if (value < dataMin) {
+                dataMin = value;
+            }
 
             barChartDataPoints.push({
                 category: category.values[i] + '',
                 value: dataValue.values[i],
                 color: getCategoricalObjectValue<Fill>(category, i, 'colorSelector', 'fill', defaultColor).solid.color,
+                imageUrl: imageUrl,
                 selectionId: host.createSelectionIdBuilder()
                     .withCategory(category, i)
                     .createSelectionId()
             });
         }
-        dataMax = <number>dataValue.maxLocal;
 
         return {
             dataPoints: barChartDataPoints,
             dataMax: dataMax,
+            dataMin: dataMin,
             settings: barChartSettings,
         };
     }
 
-    export class BarChart implements IVisual {
+    export class ImageBarChart implements IVisual {
         private svg: d3.Selection<SVGElement>;
         private host: IVisualHost;
         private selectionManager: ISelectionManager;
         private barChartContainer: d3.Selection<SVGElement>;
         private barContainer: d3.Selection<SVGElement>;
+        private defs: d3.Selection<SVGElement>;
         private xAxis: d3.Selection<SVGElement>;
         private barDataPoints: BarChartDataPoint[];
         private barChartSettings: BarChartSettings;
@@ -168,6 +200,8 @@ module powerbi.extensibility.visual {
 
             this.xAxis = svg.append('g')
                 .classed('xAxis', true);
+
+            this.defs = svg.append("defs");
         }
 
         /**
@@ -192,21 +226,25 @@ module powerbi.extensibility.visual {
             });
 
             if (settings.enableAxis.show) {
-                let margins = BarChart.Config.margins;
+                let margins = ImageBarChart.Config.margins;
                 height -= margins.bottom;
             }
 
             this.xAxis.style({
-                'font-size': d3.min([height, width]) * BarChart.Config.xAxisFontMultiplier,
+                'font-size': d3.min([height, width]) * ImageBarChart.Config.xAxisFontMultiplier,
             });
 
             let yScale = d3.scale.linear()
-                .domain([0, viewModel.dataMax])
+                .domain([viewModel.dataMin, viewModel.dataMax])
                 .range([height, 0]);
 
             let xScale = d3.scale.ordinal()
                 .domain(viewModel.dataPoints.map(d => d.category))
-                .rangeRoundBands([0, width], BarChart.Config.xScalePadding, 0.2);
+                .rangeRoundBands([0, width], ImageBarChart.Config.xScalePadding, 0.2);
+
+            const barWidth = xScale.rangeBand();
+            const imageWidth = barWidth * 4;
+            const imageHeight = (imageWidth / 1024) * 768;
 
             let xAxis = d3.svg.axis()
                 .scale(xScale)
@@ -214,6 +252,24 @@ module powerbi.extensibility.visual {
 
             this.xAxis.attr('transform', 'translate(0, ' + height + ')')
                 .call(xAxis);
+
+            if (settings.enableImages.show) {
+                const patterns = this.defs.selectAll("pattern").data(viewModel.dataPoints);
+                patterns.enter()
+                    .append("pattern")
+                    .attr("patternUnits", "userSpaceOnUse")
+                    .attr("width", imageWidth)
+                    .attr("height", imageHeight)
+                    .attr("id", d => `bg-${d.category}`)
+                    .append("image")
+                    .attr("xlink:href", d => d.imageUrl)
+                    .attr("width", imageWidth)
+                    .attr("height", imageHeight)
+
+                patterns.exit()
+                    .remove();
+
+            }
 
             let bars = this.barContainer.selectAll('.bar').data(viewModel.dataPoints);
             bars.enter()
@@ -224,10 +280,18 @@ module powerbi.extensibility.visual {
                 width: xScale.rangeBand(),
                 height: d => height - yScale(<number>d.value),
                 y: d => yScale(<number>d.value),
-                x: d => xScale(d.category),
-                fill: d => d.color,
-                'fill-opacity': viewModel.settings.generalView.opacity / 100
+                x: d => xScale(d.category)
             });
+
+            if (settings.enableImages.show) {
+                bars
+                    .attr("fill", d => `url(#bg-${d.category})`);
+            }
+            else {
+                bars
+                    .attr("fill", d => d.color)
+                    .attr("fill-opacity", viewModel.settings.generalView.opacity / 100);
+            }
 
             this.tooltipServiceWrapper.addTooltip(this.barContainer.selectAll('.bar'),
                 (tooltipEvent: TooltipEventArgs<number>) => this.getTooltipData(tooltipEvent.data),
@@ -238,16 +302,16 @@ module powerbi.extensibility.visual {
 
             // This must be an anonymous function instead of a lambda because
             // d3 uses 'this' as the reference to the element that was clicked.
-            bars.on('click', function(d) {
-				// Allow selection only if the visual is rendered in a view that supports interactivity (e.g. Report)
+            bars.on('click', function (d) {
+                // Allow selection only if the visual is rendered in a view that supports interactivity (e.g. Report)
                 if (allowInteractions) {
                     selectionManager.select(d.selectionId).then((ids: ISelectionId[]) => {
                         bars.attr({
-                            'fill-opacity': ids.length > 0 ? BarChart.Config.transparentOpacity : BarChart.Config.solidOpacity
+                            'fill-opacity': ids.length > 0 ? ImageBarChart.Config.transparentOpacity : ImageBarChart.Config.solidOpacity
                         });
 
                         d3.select(this).attr({
-                            'fill-opacity': BarChart.Config.solidOpacity
+                            'fill-opacity': ImageBarChart.Config.solidOpacity
                         });
                     });
 
@@ -256,7 +320,8 @@ module powerbi.extensibility.visual {
             });
 
             bars.exit()
-               .remove();
+                .remove();
+
         }
 
         /**
@@ -270,6 +335,15 @@ module powerbi.extensibility.visual {
             let objectEnumeration: VisualObjectInstance[] = [];
 
             switch (objectName) {
+                case 'enableImages':
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        properties: {
+                            show: this.barChartSettings.enableImages.show,
+                        },
+                        selector: null
+                    });
+                    break;
                 case 'enableAxis':
                     objectEnumeration.push({
                         objectName: objectName,
