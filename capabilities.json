@@ -9,7 +9,7 @@
             "name": "Series",
             "kind": "Grouping",
             "displayName": "Details",
-            "description": "The category to use for each bar"
+            "description": "The category to use for each column"
         },
         {
             "name": "Y",
@@ -81,7 +81,7 @@
             "displayName": "General View",
             "properties": {
                 "opacity": {
-                    "displayName": "Bars Opacity",
+                    "displayName": "Column Opacity",
                     "type": {
                         "integer": true
                     }

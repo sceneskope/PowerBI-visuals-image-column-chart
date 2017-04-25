@@ -1,10 +1,10 @@
 {
-    "name": "sceneskope-image-histogram",
-    "version": "0.3.1",
-    "description": "A histogram chart that can use images to fill in the bars.",
+    "name": "sceneskope-image-column-chart",
+    "version": "1.0.0",
+    "description": "A column chart that can use images to fill in the columns.",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/SceneSkope/PowerBI-visuals-image-histogram.git"
+        "url": "git+https://github.com/SceneSkope/PowerBI-visuals-image-column-chart.git"
     },
     "keywords": [
         "powerbi-visuals"
@@ -24,9 +24,9 @@
     },
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/SceneSkope/PowerBI-visuals-image-histogram/issues"
+        "url": "https://github.com/SceneSkope/PowerBI-visuals-image-column-chart/issues"
     },
-    "homepage": "https://github.com/SceneSkope/PowerBI-visuals-image-histogram#readme",
+    "homepage": "https://github.com/SceneSkope/PowerBI-visuals-image-column-chart#readme",
     "devDependencies": {
         "@types/d3": "^3.5.38",
         "@types/jasmine": "2.5.37",

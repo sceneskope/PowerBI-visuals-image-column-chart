@@ -1,9 +1,9 @@
 {
     "visual": {
-        "name": "ImageBarChart",
-        "displayName": "ImageBarChart",
+        "name": "ImageColumnChart",
+        "displayName": "ImageColumnChart",
         "guid": "PBI_CV_9894B302_1DFF_4A96_ABFE_BF8588197166",
-        "visualClassName": "ImageBarChart",
+        "visualClassName": "ImageColumnChart",
         "version": "1.0.0",
         "description": "",
         "supportUrl": "",

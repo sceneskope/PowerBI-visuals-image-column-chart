@@ -31,20 +31,20 @@
 @import (less) "node_modules/powerbi-visuals-utils-interactivityutils/lib/index.css";
 @import (less) "node_modules/powerbi-visuals-utils-chartutils/lib/index.css";
 
-.histogram {
-    @histogramAxesColor: #777777;
+.columnChart {
+    @axesColor: #777777;
 
     font-family: helvetica, arial, sans-serif;
 
     .axis, .legends {
         path, line {
             fill: none;
-            stroke: @histogramAxesColor;
-            shape-rendering: crispEdges;
+            stroke: @axesColor;
+            image-rendering: crisp-edges;
         }
 
         text {
-            fill: @histogramAxesColor;
+            fill: @axesColor;
             font-size: 11px;
         }
     }
