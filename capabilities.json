@@ -1,10 +1,5 @@
 {
-    "dataRoles": [{
-            "name": "Image",
-            "kind": "Grouping",
-            "displayName": "Image URL",
-            "description": "The URL of the image to show"
-        },
+    "dataRoles": [
         {
             "name": "Series",
             "kind": "Grouping",
@@ -16,37 +11,188 @@
             "kind": "Measure",
             "displayName": "Values",
             "description": "The values to plot"
+        },
+        {
+            "name": "Image",
+            "kind": "Measure",
+            "displayName": "Image URL",
+            "description": "The URL of the image to show"
         }
     ],
-    "dataViewMappings": [{
-        "conditions": [
-            { "Image": { "max": 1 }, "Series": { "min": 1, "max": 1 }, "Y": { "min": 1, "max": 1 } },
-            { "Image": { "max": 0 }, "Series": { "min": 1, "max": 1 }, "Y": { "max": 0 } }
-        ],
-        "categorical": {
-            "categories": {
-                "for": { "in": "Series" },
-                "dataReductionAlgorithm": { "top": {} }
-            },
-            "values": {
-                "group": {
-                    "by": "Image",
-                    "dataReductionAlgorithm": { "top": {} },
+    "dataViewMappings": [
+        {
+            "conditions": [
+                {
+                    "Image": {
+                        "max": 1
+                    },
+                    "Series": {
+                        "min": 1,
+                        "max": 1
+                    },
+                    "Y": {
+                        "min": 1,
+                        "max": 1
+                    }
+                },
+                {
+                    "Image": {
+                        "max": 0
+                    },
+                    "Series": {
+                        "min": 1,
+                        "max": 1
+                    },
+                    "Y": {
+                        "max": 0
+                    }
+                }
+            ],
+            "categorical": {
+                "categories": {
+                    "for": {
+                        "in": "Series"
+                    },
+                    "dataReductionAlgorithm": {
+                        "top": {}
+                    }
+                },
+                "values": {
                     "select": [
-                        { "bind": { "to": "Y" } }
+                        {
+                            "bind": {
+                                "to": "Y"
+                            }
+                        },
+                        {
+                            "bind": {
+                                "to": "Image"
+                            }
+                        }
                     ]
                 }
             }
         }
-    }],
+    ],
     "objects": {
-        "enableAxis": {
-            "displayName": "Enable Axis",
+        "categoryAxis": {
+            "displayName": "Category Axis",
             "properties": {
                 "show": {
-                    "displayName": "Enable Axis",
+                    "displayName": "Show",
                     "type": {
                         "bool": true
+                    }
+                },
+                "showAxisTitle": {
+                    "displayName": "Show title",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "axisTitle": {
+                    "displayName": "Title",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "displayUnits": {
+                    "displayName": "Display Units",
+                    "type": {
+                        "formatting": {
+                            "labelDisplayUnits": true
+                        }
+                    }
+                },
+                "precision": {
+                    "displayName": "Decimal Places",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "color": {
+                    "displayName": "Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "fontSize": {
+                    "displayName": "Font size",
+                    "type": {
+                        "formatting": {
+                            "fontSize": true
+                        }
+                    }
+                }
+            }
+        },
+        "valueAxis": {
+            "displayName": "Value axis",
+            "properties": {
+                "show": {
+                    "displayName": "Show",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "maxValue": {
+                    "displayName": "Maximum value",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "minValue": {
+                    "displayName": "Minimum value",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "showAxisTitle": {
+                    "displayName": "Show title",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "axisTitle": {
+                    "displayName": "Title",
+                    "type": {
+                        "text": true
+                    }
+                },
+                "displayUnits": {
+                    "displayName": "Display Units",
+                    "type": {
+                        "formatting": {
+                            "labelDisplayUnits": true
+                        }
+                    }
+                },
+                "precision": {
+                    "displayName": "Decimal Places",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "color": {
+                    "displayName": "Color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "fontSize": {
+                    "displayName": "Font size",
+                    "type": {
+                        "formatting": {
+                            "fontSize": true
+                        }
                     }
                 }
             }
